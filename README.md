@@ -29,7 +29,7 @@ A lightweight Terminal User Interface (TUI) text editor written entirely in Rust
 Clone the repository and build it locally:
 
 ```powershell
-git clone [https://github.com/enes73546/Tidy.git](https://github.com/enes73546/Tidy.git)
+git clone [https://github.com/enes73546/Tidy](https://github.com/enes73546/Tidy)
 cd Tidy
 cargo build --release
 
@@ -42,7 +42,7 @@ Make sure you have [Rust](https://rustup.rs/) installed, then run:
 
 ```powershell
 # Clone the repository
-git clone [https://github.com/enes73546/Tidy.git](https://github.com/enes73546/Tidy.git)
+git clone [https://github.com/enes73546/Tidy](https://github.com/enes73546/Tidy)
 cd Tidy
 
 # Install the executable globally
