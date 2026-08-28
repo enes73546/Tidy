@@ -253,7 +253,7 @@ fn main() {
                 println!();
             }
 
-            needs_render = false;
+            needs_render = false; 
 
             use std::io::Write;
             let _ = stdout().flush();
