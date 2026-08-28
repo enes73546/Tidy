@@ -68,14 +68,6 @@ pub fn highlight_line<const N: usize>(
     let mut i = 0;
 
     while i < N {
-        if cursor == Some(i) {
-            output.push_str("\x1B[30;47m");
-            output.push(line[i]);
-            output.push_str(RESET);
-            i += 1;
-            continue;
-        }
-
         if line[i].is_alphanumeric() || line[i] == '_' {
             let start = i;
 
@@ -83,26 +75,47 @@ pub fn highlight_line<const N: usize>(
                 i += 1;
             }
 
-            let word: String = line[start..i].iter().collect();
+            let mut is_macro = false;
+            if i < N && line[i] == '!' {
+                is_macro = true;
+                i += 1;
+            }
 
             let mut color = None;
 
-            for &(highlight_word, highlight_color) in highlights {
-                if word == highlight_word {
-                    color = Some(highlight_color);
-                    break;
+            if is_macro {
+                color = Some(B_RED);
+            } else {
+                let word: String = line[start..i].iter().collect();
+                for &(highlight_word, highlight_color) in highlights {
+                    if word == highlight_word {
+                        color = Some(highlight_color);
+                        break;
+                    }
                 }
             }
 
-            if let Some(color) = color {
-                output.push_str(color);
-                output.push_str(&word);
-                output.push_str(RESET);
-            } else {
-                output.push_str(&word);
+            for pos in start..i {
+                if cursor == Some(pos) {
+                    output.push_str("\x1B[30;47m");
+                    output.push(line[pos]);
+                    output.push_str(RESET);
+                } else if let Some(c) = color {
+                    output.push_str(c);
+                    output.push(line[pos]);
+                    output.push_str(RESET);
+                } else {
+                    output.push(line[pos]);
+                }
             }
         } else {
-            output.push(line[i]);
+            if cursor == Some(i) {
+                output.push_str("\x1B[30;47m");
+                output.push(line[i]);
+                output.push_str(RESET);
+            } else {
+                output.push(line[i]);
+            }
             i += 1;
         }
     }

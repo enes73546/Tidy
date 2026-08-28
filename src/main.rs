@@ -44,7 +44,6 @@ fn main() {
 
     let mut code: [[char; COLS]; LINES] = [[' '; COLS]; LINES];
 
-    // Read file argument passed via CLI: `tidy [filename]`
     let args: Vec<String> = env::args().collect();
     let mut current_filename: Option<String> = None;
 
@@ -213,7 +212,6 @@ fn main() {
                 println!("{}\r", line_str);
             }
 
-            // Get terminal width to draw status bar edge-to-edge full width
             let (term_cols, _) = size().unwrap_or((80, 24));
             let term_width = term_cols as usize;
 
