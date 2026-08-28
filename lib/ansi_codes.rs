@@ -59,43 +59,22 @@ pub const BG_I_MAGENTA: &str = "\x1b[3;45m";
 pub const BG_I_CYAN: &str = "\x1b[3;46m";
 pub const BG_I_WHITE: &str = "\x1b[3;47m";
 
-pub fn highlight_line<const N: usize>(
+pub fn highlight_line_generic<const N: usize, F>(
     line: &[char; N],
-    highlights: &[(&str, &str)],
     cursor: Option<usize>,
-) -> String {
+    get_color: F,
+) -> String
+where
+    F: Fn(&[char; N], usize) -> (usize, Option<&'static str>),
+{
     let mut output = String::new();
     let mut i = 0;
 
     while i < N {
         if line[i].is_alphanumeric() || line[i] == '_' {
-            let start = i;
+            let (end, color) = get_color(line, i);
 
-            while i < N && (line[i].is_alphanumeric() || line[i] == '_') {
-                i += 1;
-            }
-
-            let mut is_macro = false;
-            if i < N && line[i] == '!' {
-                is_macro = true;
-                i += 1;
-            }
-
-            let mut color = None;
-
-            if is_macro {
-                color = Some(B_RED);
-            } else {
-                let word: String = line[start..i].iter().collect();
-                for &(highlight_word, highlight_color) in highlights {
-                    if word == highlight_word {
-                        color = Some(highlight_color);
-                        break;
-                    }
-                }
-            }
-
-            for pos in start..i {
+            for pos in i..end {
                 if cursor == Some(pos) {
                     output.push_str("\x1B[30;47m");
                     output.push(line[pos]);
@@ -108,6 +87,7 @@ pub fn highlight_line<const N: usize>(
                     output.push(line[pos]);
                 }
             }
+            i = end;
         } else {
             if cursor == Some(i) {
                 output.push_str("\x1B[30;47m");

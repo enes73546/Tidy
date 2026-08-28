@@ -101,7 +101,7 @@ fn main() {
                     filename.push(' ');
                 } else if key.chars().count() == 1 {
                     filename.push_str(&key);
-                }
+               }
 
                 continue;
             }
@@ -115,6 +115,14 @@ fn main() {
                 filename = current_filename.clone().unwrap_or_default();
                 status_message.clear();
                 continue;
+            }
+
+            if key == "ctrl+r" {
+                let row = &mut code[line];
+                for i in (col..COLS - 1).rev() {
+                    row[i + 1] = row[i];
+                }
+                row[col] = ' ';
             }
 
             if key == "caps" {
@@ -203,11 +211,10 @@ fn main() {
                     None
                 };
 
-                let line_str = ansi::highlight_line(
-                    &code[row],
-                    &rust::HIGHLIGHTS,
-                    cursor,
-                );
+            let line_str = rust::highlight_line(
+                &code[row],
+                cursor,
+            );
 
                 println!("{}\r", line_str);
             }
