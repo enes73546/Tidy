@@ -1,6 +1,9 @@
 use crossterm::execute;
-use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::terminal::{size, EnterAlternateScreen, LeaveAlternateScreen};
+use std::env;
+use std::fs;
 use std::io::stdout;
+use std::path::Path;
 
 #[path = "../lib/ansi_codes.rs"]
 mod ansi;
@@ -20,7 +23,6 @@ pub fn clear_screen_ansi() {
     print!("\x1B[3J\x1B[2J\x1B[1;1H");
 
     use std::io::Write;
-
     let _ = std::io::stdout().flush();
 }
 
@@ -42,6 +44,23 @@ fn main() {
 
     let mut code: [[char; COLS]; LINES] = [[' '; COLS]; LINES];
 
+    // Read file argument passed via CLI: `tidy [filename]`
+    let args: Vec<String> = env::args().collect();
+    let mut current_filename: Option<String> = None;
+
+    if let Some(path_arg) = args.get(1) {
+        current_filename = Some(path_arg.clone());
+        if Path::new(path_arg).exists() {
+            if let Ok(content) = fs::read_to_string(path_arg) {
+                for (r, line_str) in content.lines().enumerate().take(LINES) {
+                    for (c, ch) in line_str.chars().enumerate().take(COLS) {
+                        code[r][c] = ch;
+                    }
+                }
+            }
+        }
+    }
+
     let mut is_caps = false;
 
     let mut line: usize = 0;
@@ -50,7 +69,7 @@ fn main() {
     let mut needs_render = true;
 
     let mut save_mode = false;
-    let mut filename = String::new();
+    let mut filename = current_filename.clone().unwrap_or_default();
     let mut status_message = String::new();
 
     loop {
@@ -60,7 +79,7 @@ fn main() {
             if save_mode {
                 if key == "esc" {
                     save_mode = false;
-                    filename.clear();
+                    filename = current_filename.clone().unwrap_or_default();
                     status_message.clear();
                 } else if key == "backspace" {
                     filename.pop();
@@ -69,6 +88,7 @@ fn main() {
                         match save_file(&code, &filename) {
                             Ok(_) => {
                                 status_message = format!("Saved {}", filename);
+                                current_filename = Some(filename.clone());
                                 save_mode = false;
                             }
 
@@ -93,7 +113,7 @@ fn main() {
 
             if key == "ctrl+s" {
                 save_mode = true;
-                filename.clear();
+                filename = current_filename.clone().unwrap_or_default();
                 status_message.clear();
                 continue;
             }
@@ -193,17 +213,38 @@ fn main() {
                 println!("{}\r", line_str);
             }
 
+            // Get terminal width to draw status bar edge-to-edge full width
+            let (term_cols, _) = size().unwrap_or((80, 24));
+            let term_width = term_cols as usize;
+
+            let file_label = match &current_filename {
+                Some(name) => format!("[{}]", name),
+                None => "[New File]".to_string(),
+            };
+
             if save_mode {
+                let left_text = format!(" Save file: {}", filename);
+                let padding = term_width.saturating_sub(left_text.len());
                 print!(
-                    "\x1B[7m Save file: {}{}\x1B[0m\r\n",
-                    filename,
-                    " ".repeat(COLS.saturating_sub(12 + filename.len()))
+                    "\x1B[7m{}{}\x1B[0m\r\n",
+                    left_text,
+                    " ".repeat(padding)
                 );
             } else {
-                print!(
-                    "\x1B[7m ^S Save    Esc Exit{}\x1B[0m\r\n",
-                    " ".repeat(COLS.saturating_sub(18))
-                );
+                let left_text = "^S Save    Esc Exit".to_string();
+                let total_text_len = left_text.len() + file_label.len();
+                
+                if term_width > total_text_len {
+                    let middle_padding = term_width - total_text_len;
+                    print!(
+                        "\x1B[7m{}{}{}\x1B[0m\r\n",
+                        left_text,
+                        " ".repeat(middle_padding),
+                        file_label
+                    );
+                } else {
+                    print!("\x1B[7m{}\x1B[0m\r\n", left_text);
+                }
             }
 
             if !status_message.is_empty() {
